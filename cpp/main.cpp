@@ -11,10 +11,9 @@
 #include "cbtree.h"
 using namespace std;
 
-// Все именованные структуры хранятся в односвязном списке контейнеров.
 struct Container {
     string name;
-    char type;   // M - массив, F - односвязный, L - двусвязный, S - стек, Q - очередь, T - дерево
+    char type;
     Array* arr;
     FList* flist;
     DList* dlist;
@@ -37,8 +36,6 @@ Container* findContainer(Database* db, const string& name) {
     return nullptr;
 }
 
-// Возвращает контейнер нужного типа, создавая его при первом обращении.
-// Если имя уже занято структурой другого типа — nullptr.
 Container* getOrCreate(Database* db, const string& name, char type) {
     Container* c = findContainer(db, name);
     if (c != nullptr) {
@@ -62,7 +59,6 @@ Container* getOrCreate(Database* db, const string& name, char type) {
     else if (type == 'Q') c->queue = createQueue();
     else if (type == 'T') c->tree = createCbTree();
 
-    // контейнеры добавляются в конец списка, чтобы порядок в файле был постоянным
     if (db->head == nullptr) {
         db->head = c;
     } else {
@@ -73,7 +69,6 @@ Container* getOrCreate(Database* db, const string& name, char type) {
     return c;
 }
 
-// Возвращает только существующий контейнер нужного типа.
 Container* getExisting(Database* db, const string& name, char type) {
     Container* c = findContainer(db, name);
     if (c == nullptr || c->type != type) return nullptr;
@@ -96,12 +91,9 @@ void freeDatabase(Database* db) {
     db->head = nullptr;
 }
 
-// ---------- Работа с файлом ----------
-
-// Формат файла: <тип> <имя> <элементы...>, одна структура на строку.
 void loadFile(Database* db, const string& filename) {
     ifstream in(filename);
-    if (!in.is_open()) return; // файла ещё нет — начинаем с пустой базы
+    if (!in.is_open()) return;
     string line;
     while (getline(in, line)) {
         istringstream ss(line);
@@ -122,14 +114,12 @@ void loadFile(Database* db, const string& filename) {
     }
 }
 
-// Стек пишем от дна к вершине, чтобы при загрузке порядок восстановился.
 static void saveStackRec(FNode* node, ofstream& out) {
     if (node == nullptr) return;
     saveStackRec(node->next, out);
     out << " " << node->data;
 }
 
-// Дерево пишем в порядке массива (обход по уровням): вставка снова даст ту же структуру.
 static void saveTreeRec(CbTree* tree, ofstream& out) {
     for (int i = 0; i < tree->size; i++) {
         out << " " << tree->data[i];
@@ -164,8 +154,6 @@ void saveFile(Database* db, const string& filename) {
     }
 }
 
-// ---------- Выполнение команд ----------
-
 const int MAX_WORDS = 8;
 
 void printError(const string& msg) {
@@ -176,29 +164,24 @@ void printBool(bool ok) {
     cout << "-> " << (ok ? "TRUE" : "FALSE") << endl;
 }
 
-// Выводит значение или сообщение об ошибке и возвращает ok,
-// чтобы команды заканчивались конструкцией return printResult(...).
 bool printResult(const string& value, bool ok, const string& errMsg) {
     if (ok) cout << "-> " << value << endl;
     else printError(errMsg);
     return ok;
 }
 
-// run... возвращают true, если структура изменилась и файл нужно перезаписать.
-
-// Массив (M)
 bool runArray(Database* db, string* w, int n) {
     string cmd = w[0];
     if (n < 2) { printError("no name"); return false; }
 
-    if (cmd == "MPUSH" && n == 3) { // MPUSH имя значение
+    if (cmd == "MPUSH" && n == 3) {
         Container* c = getOrCreate(db, w[1], 'M');
         if (c == nullptr) { printError("name used by another type"); return false; }
         pushBack(c->arr, w[2]);
         cout << "-> " << w[2] << endl;
         return true;
     }
-    if (cmd == "MINSERT" && n == 4) { // MINSERT имя индекс значение
+    if (cmd == "MINSERT" && n == 4) {
         Container* c = getOrCreate(db, w[1], 'M');
         if (c == nullptr) { printError("name used by another type"); return false; }
         int index = stoi(w[2]);
@@ -208,30 +191,29 @@ bool runArray(Database* db, string* w, int n) {
     Container* c = getExisting(db, w[1], 'M');
     if (c == nullptr) { printError("array not found"); return false; }
 
-    if (cmd == "MLEN" && n == 2) { // MLEN имя
+    if (cmd == "MLEN" && n == 2) {
         cout << "-> " << length(c->arr) << endl;
         return false;
     }
     if (n < 3) { printError("unknown command or wrong arguments"); return false; }
     int index = stoi(w[2]);
 
-    if (cmd == "MGET" && n == 3) { // MGET имя индекс
+    if (cmd == "MGET" && n == 3) {
         string res;
         if (getAt(c->arr, index, res)) cout << "-> " << res << endl;
         else printError("bad index");
         return false;
     }
-    if (cmd == "MSET" && n == 4) { // MSET имя индекс значение
+    if (cmd == "MSET" && n == 4) {
         return printResult(w[3], setAt(c->arr, index, w[3]), "bad index");
     }
-    if (cmd == "MDEL" && n == 3) { // MDEL имя индекс
+    if (cmd == "MDEL" && n == 3) {
         return printResult("deleted", removeAt(c->arr, index), "bad index");
     }
     printError("unknown command or wrong arguments");
     return false;
 }
 
-// Односвязный список (F)
 bool runFList(Database* db, string* w, int n) {
     string cmd = w[0];
     if (n < 2) { printError("no name"); return false; }
@@ -249,13 +231,13 @@ bool runFList(Database* db, string* w, int n) {
     if (c == nullptr) { printError("list not found"); return false; }
     string res;
 
-    if (cmd == "FPUSHAFTER" && n == 4) { // FPUSHAFTER имя цель значение
+    if (cmd == "FPUSHAFTER" && n == 4) {
         return printResult(w[3], pushAfter(c->flist, w[2], w[3]), "target not found");
     }
     if (cmd == "FPUSHBEFORE" && n == 4) {
         return printResult(w[3], pushBefore(c->flist, w[2], w[3]), "target not found");
     }
-    if (cmd == "FDELHEAD" && n == 2) { // FDELHEAD имя
+    if (cmd == "FDELHEAD" && n == 2) {
         string tmp;
         bool ok = popFront(c->flist, tmp);
         return printResult(tmp, ok, "list is empty");
@@ -265,7 +247,7 @@ bool runFList(Database* db, string* w, int n) {
         bool ok = popBack(c->flist, tmp);
         return printResult(tmp, ok, "list is empty");
     }
-    if (cmd == "FDELAFTER" && n == 3) { // FDELAFTER имя цель
+    if (cmd == "FDELAFTER" && n == 3) {
         bool ok = removeAfter(c->flist, w[2], res);
         if (!ok) printError("nothing to delete");
         else cout << "-> " << res << endl;
@@ -277,21 +259,21 @@ bool runFList(Database* db, string* w, int n) {
         else cout << "-> " << res << endl;
         return ok;
     }
-    if (cmd == "FDEL" && n == 3) { // FDEL имя значение
+    if (cmd == "FDEL" && n == 3) {
         bool ok = removeValue(c->flist, w[2]);
         printBool(ok);
         return ok;
     }
-    if (cmd == "FGET" && n == 3) { // FGET имя индекс
+    if (cmd == "FGET" && n == 3) {
         if (getAt(c->flist, stoi(w[2]), res)) cout << "-> " << res << endl;
         else printError("bad index");
         return false;
     }
-    if (cmd == "FFIND" && n == 3) { // FFIND имя значение
+    if (cmd == "FFIND" && n == 3) {
         printBool(findNode(c->flist, w[2]) != nullptr);
         return false;
     }
-    if (cmd == "FPRINTREV" && n == 2) { // FPRINTREV имя
+    if (cmd == "FPRINTREV" && n == 2) {
         cout << "-> ";
         printReverse(c->flist);
         return false;
@@ -300,7 +282,6 @@ bool runFList(Database* db, string* w, int n) {
     return false;
 }
 
-// Двусвязный список (L)
 bool runDList(Database* db, string* w, int n) {
     string cmd = w[0];
     if (n < 2) { printError("no name"); return false; }
@@ -369,24 +350,23 @@ bool runDList(Database* db, string* w, int n) {
     return false;
 }
 
-// Стек (S)
 bool runStack(Database* db, string* w, int n) {
     string cmd = w[0];
-    if (cmd == "SPUSH" && n == 3) { // SPUSH имя значение
+    if (cmd == "SPUSH" && n == 3) {
         Container* c = getOrCreate(db, w[1], 'S');
         if (c == nullptr) { printError("name used by another type"); return false; }
         push(c->stack, w[2]);
         cout << "-> " << w[2] << endl;
         return true;
     }
-    if (cmd == "SPOP" && n == 2) { // SPOP имя
+    if (cmd == "SPOP" && n == 2) {
         Container* c = getExisting(db, w[1], 'S');
         if (c == nullptr) { printError("stack not found"); return false; }
         string res;
         bool ok = pop(c->stack, res);
         return printResult(res, ok, "stack is empty");
     }
-    if (cmd == "SGET" && n == 2) { // SGET имя — прочитать вершину
+    if (cmd == "SGET" && n == 2) {
         Container* c = getExisting(db, w[1], 'S');
         if (c == nullptr) { printError("stack not found"); return false; }
         string res;
@@ -397,24 +377,23 @@ bool runStack(Database* db, string* w, int n) {
     return false;
 }
 
-// Очередь (Q)
 bool runQueue(Database* db, string* w, int n) {
     string cmd = w[0];
-    if (cmd == "QPUSH" && n == 3) { // QPUSH имя значение
+    if (cmd == "QPUSH" && n == 3) {
         Container* c = getOrCreate(db, w[1], 'Q');
         if (c == nullptr) { printError("name used by another type"); return false; }
         push(c->queue, w[2]);
         cout << "-> " << w[2] << endl;
         return true;
     }
-    if (cmd == "QPOP" && n == 2) { // QPOP имя
+    if (cmd == "QPOP" && n == 2) {
         Container* c = getExisting(db, w[1], 'Q');
         if (c == nullptr) { printError("queue not found"); return false; }
         string res;
         bool ok = pop(c->queue, res);
         return printResult(res, ok, "queue is empty");
     }
-    if (cmd == "QGET" && n == 2) { // QGET имя — прочитать первый элемент
+    if (cmd == "QGET" && n == 2) {
         Container* c = getExisting(db, w[1], 'Q');
         if (c == nullptr) { printError("queue not found"); return false; }
         string res;
@@ -425,10 +404,9 @@ bool runQueue(Database* db, string* w, int n) {
     return false;
 }
 
-// Complete Binary Tree (T)
 bool runTree(Database* db, string* w, int n) {
     string cmd = w[0];
-    if (cmd == "TINSERT" && n == 3) { // TINSERT имя значение
+    if (cmd == "TINSERT" && n == 3) {
         Container* c = getOrCreate(db, w[1], 'T');
         if (c == nullptr) { printError("name used by another type"); return false; }
         if (search(c->tree, w[2])) { printError("value already exists"); return false; }
@@ -441,19 +419,19 @@ bool runTree(Database* db, string* w, int n) {
     Container* c = getExisting(db, w[1], 'T');
     if (c == nullptr) { printError("tree not found"); return false; }
 
-    if ((cmd == "TGET" || cmd == "ISMEMBER") && n == 3) { // поиск элемента в дереве
+    if ((cmd == "TGET" || cmd == "ISMEMBER") && n == 3) {
         printBool(search(c->tree, w[2]));
         return false;
     }
-    if (cmd == "TISCOMPLETE" && n == 2) { // TISCOMPLETE имя — проверка на полноту
+    if (cmd == "TISCOMPLETE" && n == 2) {
         printBool(isComplete(c->tree));
         return false;
     }
-    if (cmd == "TISFULL" && n == 2) { // TISFULL имя — проверка на полное бинарное дерево
+    if (cmd == "TISFULL" && n == 2) {
         printBool(isFull(c->tree));
         return false;
     }
-    if (cmd == "TSIZE" && n == 2) { // TSIZE имя
+    if (cmd == "TSIZE" && n == 2) {
         cout << "-> " << size(c->tree) << endl;
         return false;
     }
@@ -470,7 +448,6 @@ bool runTree(Database* db, string* w, int n) {
     return false;
 }
 
-// PRINT имя — вывод любой структуры
 void runPrint(Database* db, string* w, int n) {
     if (n != 2) { printError("usage: PRINT name"); return; }
     Container* c = findContainer(db, w[1]);
@@ -492,10 +469,9 @@ bool execute(Database* db, const string& query) {
 
     string cmd = w[0];
     if (cmd == "PRINT") { runPrint(db, w, n); return false; }
-    // В контрольном примере ISMEMBER — альтернативная команда поиска в дереве.
+
     if (cmd == "ISMEMBER") return runTree(db, w, n);
 
-    // первая буква команды — тип структуры
     switch (cmd[0]) {
     case 'M': return runArray(db, w, n);
     case 'F': return runFList(db, w, n);
@@ -526,11 +502,10 @@ int main(int argc, char* argv[]) {
     bool changed = false;
     try {
         changed = execute(&db, query);
-    } catch (const exception& e) { // stoi на нечисловом аргументе
+    } catch (const exception& e) {
         printError("number expected");
     }
 
-    // файл перезаписывается, только если состав элементов изменился
     if (changed) saveFile(&db, filename);
     freeDatabase(&db);
     return 0;

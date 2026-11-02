@@ -9,19 +9,15 @@ import (
 	"strings"
 )
 
-// Все именованные структуры хранятся в односвязном списке контейнеров.
-// Деревья по заданию реализуются только на C++, поэтому строки вида
-// "T имя ..." сохраняются из файла как есть и выводятся обратно без изменений.
-
 type Container struct {
 	name  string
-	kind  byte // 'M', 'F', 'L', 'S', 'Q', 'T'
+	kind  byte
 	arr   *Array
 	flist *FList
 	dlist *DList
 	stack *Stack
 	queue *Queue
-	raw   string // исходная строка дерева из файла
+	raw   string
 	next  *Container
 }
 
@@ -38,7 +34,6 @@ func (db *Database) find(name string) *Container {
 	return nil
 }
 
-// Найти контейнер по имени или создать новый; nil, если имя занято другим типом.
 func (db *Database) getOrCreate(name string, kind byte) *Container {
 	c := db.find(name)
 	if c != nil {
@@ -47,7 +42,7 @@ func (db *Database) getOrCreate(name string, kind byte) *Container {
 		}
 		return c
 	}
-	// поля, не указанные в {...}, получают нулевые значения (nil, 0, "")
+
 	c = &Container{name: name, kind: kind}
 	switch kind {
 	case 'M':
@@ -61,7 +56,7 @@ func (db *Database) getOrCreate(name string, kind byte) *Container {
 	case 'Q':
 		c.queue = NewQueue()
 	}
-	// контейнеры добавляются в конец списка, чтобы порядок строк в файле был постоянным
+
 	if db.head == nil {
 		db.head = c
 	} else {
@@ -74,7 +69,6 @@ func (db *Database) getOrCreate(name string, kind byte) *Container {
 	return c
 }
 
-// Только существующий контейнер нужного типа.
 func (db *Database) getExisting(name string, kind byte) *Container {
 	c := db.find(name)
 	if c == nil || c.kind != kind {
@@ -83,20 +77,17 @@ func (db *Database) getExisting(name string, kind byte) *Container {
 	return c
 }
 
-// ================= Работа с файлом =================
-
-// Формат файла: <тип> <имя> <элементы...>, одна структура на строку.
 func loadFile(db *Database, filename string) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return // файла ещё нет - начинаем с пустой базы
+		return
 	}
-	defer file.Close() // выполнится при выходе из функции
+	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	for scanner.Scan() { // false, когда строки закончились
+	for scanner.Scan() {
 		line := scanner.Text()
-		words := strings.Fields(line) // "S st a b" -> срез ["S", "st", "a", "b"]
+		words := strings.Fields(line)
 		if len(words) < 2 {
 			continue
 		}
@@ -108,12 +99,11 @@ func loadFile(db *Database, filename string) {
 		if c == nil {
 			continue
 		}
-		if kind == 'T' { // дерево сохраняем как есть
+		if kind == 'T' {
 			c.raw = line
 			continue
 		}
-		// words[2:] - срез с элементами от 2-го до последнего (без типа и имени).
-		// range выдаёт пару (индекс, значение), индекс не нужен - пишем "_"
+
 		for _, item := range words[2:] {
 			switch kind {
 			case 'M':
@@ -131,7 +121,6 @@ func loadFile(db *Database, filename string) {
 	}
 }
 
-// Стек пишем от дна к вершине, чтобы при загрузке порядок восстановился.
 func saveStackRec(node *FNode, sb *strings.Builder) {
 	if node == nil {
 		return
@@ -147,7 +136,7 @@ func saveFile(db *Database, filename string) {
 			sb.WriteString(c.raw + "\n")
 			continue
 		}
-		// string(c.kind) - символ в строку, чтобы склеить через +
+
 		sb.WriteString(string(c.kind) + " " + c.name)
 		switch c.kind {
 		case 'M':
@@ -171,14 +160,12 @@ func saveFile(db *Database, filename string) {
 		}
 		sb.WriteString("\n")
 	}
-	// []byte(...) - строка как срез байтов; 0644 - права доступа к файлу
+
 	err := os.WriteFile(filename, []byte(sb.String()), 0644)
 	if err != nil {
 		fmt.Println("-> ERROR: cannot write file")
 	}
 }
-
-// ================= Выполнение команд =================
 
 func printError(msg string) {
 	fmt.Println("-> ERROR: " + msg)
@@ -192,8 +179,6 @@ func printBool(ok bool) {
 	}
 }
 
-// Печатает значение или ошибку и возвращает ok,
-// чтобы команды заканчивались конструкцией return printResult(...).
 func printResult(value string, ok bool, errMsg string) bool {
 	if ok {
 		fmt.Println("-> " + value)
@@ -203,24 +188,18 @@ func printResult(value string, ok bool, errMsg string) bool {
 	return ok
 }
 
-// strconv.Atoi: строка -> число; err == nil, если строка была числом
 func toInt(s string) (int, bool) {
 	n, err := strconv.Atoi(s)
 	return n, err == nil
 }
 
-// run... возвращают true, если структура изменилась (тогда main сохранит файл).
-// w - срез слов команды: w[0] - команда, w[1] - имя, дальше аргументы.
-
-// ---------- Массив (M) ----------
-
 func runArray(db *Database, w []string) bool {
-	cmd, n := w[0], len(w) // две переменные сразу: cmd = w[0], n = len(w)
+	cmd, n := w[0], len(w)
 	if n < 2 {
 		printError("no name")
 		return false
 	}
-	if cmd == "MPUSH" && n == 3 { // MPUSH имя значение
+	if cmd == "MPUSH" && n == 3 {
 		c := db.getOrCreate(w[1], 'M')
 		if c == nil {
 			printError("name used by another type")
@@ -230,7 +209,7 @@ func runArray(db *Database, w []string) bool {
 		fmt.Println("-> " + w[2])
 		return true
 	}
-	if cmd == "MINSERT" && n == 4 { // MINSERT имя индекс значение
+	if cmd == "MINSERT" && n == 4 {
 		idx, ok := toInt(w[2])
 		if !ok {
 			printError("number expected")
@@ -249,8 +228,8 @@ func runArray(db *Database, w []string) bool {
 		printError("array not found")
 		return false
 	}
-	if cmd == "MLEN" && n == 2 { // MLEN имя
-		fmt.Println("->", c.arr.Length()) // аргументы через запятую, между ними пробел
+	if cmd == "MLEN" && n == 2 {
+		fmt.Println("->", c.arr.Length())
 		return false
 	}
 	if n < 3 {
@@ -262,25 +241,21 @@ func runArray(db *Database, w []string) bool {
 		printError("number expected")
 		return false
 	}
-	// switch без выражения - цепочка if / else if
+
 	switch {
-	case cmd == "MGET" && n == 3: // MGET имя индекс
+	case cmd == "MGET" && n == 3:
 		value, ok := c.arr.GetAt(idx)
 		printResult(value, ok, "bad index")
 		return false
-	case cmd == "MSET" && n == 4: // MSET имя индекс значение
+	case cmd == "MSET" && n == 4:
 		return printResult(w[3], c.arr.SetAt(idx, w[3]), "bad index")
-	case cmd == "MDEL" && n == 3: // MDEL имя индекс
+	case cmd == "MDEL" && n == 3:
 		return printResult("deleted", c.arr.RemoveAt(idx), "bad index")
 	}
 	printError("unknown command or wrong arguments")
 	return false
 }
 
-// ---------- Списки (F и L) ----------
-
-// interface - список методов. У FList и DList есть все эти методы,
-// поэтому runList работает с любым из них через тип List.
 type List interface {
 	PushFront(value string)
 	PushBack(value string)
@@ -296,7 +271,6 @@ type List interface {
 	PrintReverse()
 }
 
-// Оба списка обрабатываются одной функцией: prefix = "F" или "L"
 func runList(db *Database, w []string, prefix string) bool {
 	cmd, n := w[0], len(w)
 	if n < 2 {
@@ -304,10 +278,8 @@ func runList(db *Database, w []string, prefix string) bool {
 		return false
 	}
 	kind := prefix[0]
-	op := cmd[1:] // срез строки с символа 1: FPUSHHEAD -> PUSHHEAD
+	op := cmd[1:]
 
-	// Функция внутри функции, сохранённая в переменную; видит w, db и kind.
-	// create = true - создать список, если его нет.
 	getList := func(create bool) List {
 		var c *Container
 		if create {
@@ -346,27 +318,27 @@ func runList(db *Database, w []string, prefix string) bool {
 	}
 
 	switch {
-	case op == "PUSHAFTER" && n == 4: // FPUSHAFTER имя цель значение
+	case op == "PUSHAFTER" && n == 4:
 		return printResult(w[3], list.PushAfter(w[2], w[3]), "target not found")
 	case op == "PUSHBEFORE" && n == 4:
 		return printResult(w[3], list.PushBefore(w[2], w[3]), "target not found")
-	case op == "DELHEAD" && n == 2: // FDELHEAD имя
+	case op == "DELHEAD" && n == 2:
 		value, ok := list.PopFront()
 		return printResult(value, ok, "list is empty")
 	case op == "DELTAIL" && n == 2:
 		value, ok := list.PopBack()
 		return printResult(value, ok, "list is empty")
-	case op == "DELAFTER" && n == 3: // FDELAFTER имя цель
+	case op == "DELAFTER" && n == 3:
 		value, ok := list.RemoveAfter(w[2])
 		return printResult(value, ok, "nothing to delete")
 	case op == "DELBEFORE" && n == 3:
 		value, ok := list.RemoveBefore(w[2])
 		return printResult(value, ok, "nothing to delete")
-	case op == "DEL" && n == 3: // FDEL имя значение
+	case op == "DEL" && n == 3:
 		ok := list.RemoveValue(w[2])
 		printBool(ok)
 		return ok
-	case op == "GET" && n == 3: // FGET имя индекс
+	case op == "GET" && n == 3:
 		idx, ok := toInt(w[2])
 		if !ok {
 			printError("number expected")
@@ -375,16 +347,15 @@ func runList(db *Database, w []string, prefix string) bool {
 		value, ok := list.GetAt(idx)
 		printResult(value, ok, "bad index")
 		return false
-	case op == "FIND" && n == 3: // FFIND имя значение
-		// FindNode возвращает разные типы (*FNode и *DNode), поэтому его нет в интерфейсе.
-		// list.(*FList) - достать из интерфейса конкретный тип *FList
+	case op == "FIND" && n == 3:
+
 		if kind == 'F' {
 			printBool(list.(*FList).FindNode(w[2]) != nil)
 		} else {
 			printBool(list.(*DList).FindNode(w[2]) != nil)
 		}
 		return false
-	case op == "PRINTREV" && n == 2: // FPRINTREV имя
+	case op == "PRINTREV" && n == 2:
 		fmt.Print("-> ")
 		list.PrintReverse()
 		return false
@@ -393,11 +364,9 @@ func runList(db *Database, w []string, prefix string) bool {
 	return false
 }
 
-// ---------- Стек (S) ----------
-
 func runStack(db *Database, w []string) bool {
 	cmd, n := w[0], len(w)
-	if cmd == "SPUSH" && n == 3 { // SPUSH имя значение
+	if cmd == "SPUSH" && n == 3 {
 		c := db.getOrCreate(w[1], 'S')
 		if c == nil {
 			printError("name used by another type")
@@ -407,7 +376,7 @@ func runStack(db *Database, w []string) bool {
 		fmt.Println("-> " + w[2])
 		return true
 	}
-	if cmd == "SPOP" && n == 2 { // SPOP имя
+	if cmd == "SPOP" && n == 2 {
 		c := db.getExisting(w[1], 'S')
 		if c == nil {
 			printError("stack not found")
@@ -416,7 +385,7 @@ func runStack(db *Database, w []string) bool {
 		value, ok := c.stack.Pop()
 		return printResult(value, ok, "stack is empty")
 	}
-	if cmd == "SGET" && n == 2 { // SGET имя - прочитать вершину
+	if cmd == "SGET" && n == 2 {
 		c := db.getExisting(w[1], 'S')
 		if c == nil {
 			printError("stack not found")
@@ -429,11 +398,9 @@ func runStack(db *Database, w []string) bool {
 	return false
 }
 
-// ---------- Очередь (Q) ----------
-
 func runQueue(db *Database, w []string) bool {
 	cmd, n := w[0], len(w)
-	if cmd == "QPUSH" && n == 3 { // QPUSH имя значение
+	if cmd == "QPUSH" && n == 3 {
 		c := db.getOrCreate(w[1], 'Q')
 		if c == nil {
 			printError("name used by another type")
@@ -443,7 +410,7 @@ func runQueue(db *Database, w []string) bool {
 		fmt.Println("-> " + w[2])
 		return true
 	}
-	if cmd == "QPOP" && n == 2 { // QPOP имя
+	if cmd == "QPOP" && n == 2 {
 		c := db.getExisting(w[1], 'Q')
 		if c == nil {
 			printError("queue not found")
@@ -452,7 +419,7 @@ func runQueue(db *Database, w []string) bool {
 		value, ok := c.queue.Pop()
 		return printResult(value, ok, "queue is empty")
 	}
-	if cmd == "QGET" && n == 2 { // QGET имя - прочитать первый элемент
+	if cmd == "QGET" && n == 2 {
 		c := db.getExisting(w[1], 'Q')
 		if c == nil {
 			printError("queue not found")
@@ -465,14 +432,10 @@ func runQueue(db *Database, w []string) bool {
 	return false
 }
 
-// ---------- Дерево (T) ----------
-
 func runTree(db *Database, w []string) bool {
 	printError("trees are implemented in the C++ version")
 	return false
 }
-
-// ---------- PRINT имя ----------
 
 func runPrint(db *Database, w []string) {
 	if len(w) != 2 {
@@ -505,9 +468,8 @@ func runPrint(db *Database, w []string) {
 	}
 }
 
-// true - база изменилась, нужно сохранить
 func execute(db *Database, query string) bool {
-	w := strings.Fields(query) // "SPUSH mystack a" -> ["SPUSH", "mystack", "a"]
+	w := strings.Fields(query)
 	if len(w) == 0 {
 		printError("empty query")
 		return false
@@ -517,7 +479,7 @@ func execute(db *Database, query string) bool {
 		runPrint(db, w)
 		return false
 	}
-	// первая буква команды - тип структуры
+
 	switch cmd[0] {
 	case 'M':
 		return runArray(db, w)
@@ -536,16 +498,12 @@ func execute(db *Database, query string) bool {
 	return false
 }
 
-// ================= main =================
-
-// Запуск: ./dbms --file file.data --query 'SPUSH mystack item'
 func main() {
-	// flag.String возвращает указатель на строку, куда запишется значение параметра
+
 	filename := flag.String("file", "", "data file")
 	query := flag.String("query", "", "query")
-	flag.Parse() // понимает и --file, и -file
+	flag.Parse()
 
-	// *filename - сама строка по указателю
 	if *filename == "" || *query == "" {
 		fmt.Println("Usage: ./dbms --file <file> --query '<COMMAND args>'")
 		os.Exit(1)
@@ -553,7 +511,7 @@ func main() {
 
 	db := &Database{}
 	loadFile(db, *filename)
-	// файл перезаписывается, только если состав элементов изменился
+
 	if execute(db, *query) {
 		saveFile(db, *filename)
 	}

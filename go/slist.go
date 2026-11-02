@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-// ---------- Односвязный список (префикс команд F) ----------
-
 type FNode struct {
 	data string
 	next *FNode
@@ -14,15 +12,14 @@ type FNode struct {
 
 type FList struct {
 	head *FNode
-	tail *FNode // для добавления в конец за O(1)
+	tail *FNode
 }
 
 func NewFList() *FList {
-	// &FList{nil, nil} - поля без имён заполняются по порядку: head, tail
+
 	return &FList{nil, nil}
 }
 
-// Линейный поиск узла по значению: идём от головы до конца списка, O(n).
 func (list *FList) FindNode(value string) *FNode {
 	cur := list.head
 	for cur != nil {
@@ -34,30 +31,25 @@ func (list *FList) FindNode(value string) *FNode {
 	return nil
 }
 
-// ---------- Добавление ----------
-
-// Новый узел становится головой: переставляем одну ссылку, O(1).
 func (list *FList) PushFront(value string) {
-	n := &FNode{value, list.head} // data = value, next = старая голова
+	n := &FNode{value, list.head}
 	list.head = n
 	if list.tail == nil {
 		list.tail = n
 	}
 }
 
-// Добавление в конец через ссылку tail - O(1).
 func (list *FList) PushBack(value string) {
 	n := &FNode{value, nil}
 	if list.tail == nil {
 		list.head = n
 		list.tail = n
 	} else {
-		list.tail.next = n // цепочка точек: поле next у узла tail
+		list.tail.next = n
 		list.tail = n
 	}
 }
 
-// target, value string - два параметра одного типа, тип пишется один раз в конце
 func (list *FList) PushAfter(target, value string) bool {
 	p := list.FindNode(target)
 	if p == nil {
@@ -75,7 +67,7 @@ func (list *FList) PushBefore(target, value string) bool {
 	if list.head == nil {
 		return false
 	}
-	if list.head.data == target { // цель - голова списка
+	if list.head.data == target {
 		list.PushFront(value)
 		return true
 	}
@@ -91,9 +83,6 @@ func (list *FList) PushBefore(target, value string) bool {
 	return true
 }
 
-// ---------- Удаление ----------
-
-// (string, bool) - значение и признак успеха
 func (list *FList) PopFront() (string, bool) {
 	if list.head == nil {
 		return "", false
@@ -106,13 +95,11 @@ func (list *FList) PopFront() (string, bool) {
 	return old.data, true
 }
 
-// В односвязном списке удалить хвост за O(1) нельзя:
-// у последнего узла нет ссылки на предыдущий, поэтому ищем его, O(n).
 func (list *FList) PopBack() (string, bool) {
 	if list.head == nil {
 		return "", false
 	}
-	if list.head == list.tail { // единственный узел
+	if list.head == list.tail {
 		value := list.head.data
 		list.head, list.tail = nil, nil
 		return value, true
@@ -143,7 +130,7 @@ func (list *FList) RemoveAfter(target string) (string, bool) {
 
 func (list *FList) RemoveBefore(target string) (string, bool) {
 	if list.head == nil || list.head.data == target {
-		return "", false // перед головой ничего нет
+		return "", false
 	}
 	if list.head.next == nil {
 		return "", false
@@ -187,9 +174,6 @@ func (list *FList) RemoveValue(value string) bool {
 	return true
 }
 
-// ---------- Чтение ----------
-
-// Доступ по индексу: идём от головы index шагов, O(n).
 func (list *FList) GetAt(index int) (string, bool) {
 	if index < 0 {
 		return "", false
@@ -222,7 +206,6 @@ func (list *FList) Print() {
 	fmt.Println(list.String())
 }
 
-// Обход от хвоста к голове (рекурсия вместо стека).
 func (list *FList) PrintReverse() {
 	if list.head == nil {
 		fmt.Println("(empty)")

@@ -1,37 +1,32 @@
 #pragma once
 #include <string>
 
-// ---------- Односвязный список (префикс команд F) ----------
-
 struct FNode {
     std::string data;
-    FNode* next; // указатель на следующий узел; у последнего узла next = nullptr
+    FNode* next;
 };
 
 struct FList {
     FNode* head;
-    FNode* tail; // для добавления в конец за O(1)
+    FNode* tail;
 };
 
 FList* createFList();
 FNode* findNode(FList* list, const std::string& value);
 
-// 4 способа добавления
-void pushFront(FList* list, const std::string& value);                             // в начало
-void pushBack(FList* list, const std::string& value);                              // в конец
-bool pushAfter(FList* list, const std::string& target, const std::string& value);  // после элемента
-bool pushBefore(FList* list, const std::string& target, const std::string& value); // перед элементом
+void pushFront(FList* list, const std::string& value);
+void pushBack(FList* list, const std::string& value);
+bool pushAfter(FList* list, const std::string& target, const std::string& value);
+bool pushBefore(FList* list, const std::string& target, const std::string& value);
 
-// 4 способа удаления
-bool popFront(FList* list, std::string& result);                      // из начала
-bool popBack(FList* list, std::string& result);                       // из конца
+bool popFront(FList* list, std::string& result);
+bool popBack(FList* list, std::string& result);
 bool removeAfter(FList* list, const std::string& target, std::string& result);
 bool removeBefore(FList* list, const std::string& target, std::string& result);
-bool removeValue(FList* list, const std::string& value);              // удаление по значению
+bool removeValue(FList* list, const std::string& value);
 
-// чтение
-bool getAt(FList* list, int index, std::string& result);  // по индексу
-void print(FList* list);                                  // от головы к хвосту
-void printReverse(FList* list);                           // от хвоста к голове
+bool getAt(FList* list, int index, std::string& result);
+void print(FList* list);
+void printReverse(FList* list);
 
 void freeList(FList* list);

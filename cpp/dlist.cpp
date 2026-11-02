@@ -16,25 +16,20 @@ DNode* findNode(DList* list, const string& value) {
     return nullptr;
 }
 
-// ---------- Добавление ----------
-
-// Меняем ссылки и у новой головы, и у прежней головы, O(1).
 void pushFront(DList* list, const string& value) {
     DNode* n = new DNode{value, nullptr, list->head};
     if (list->head != nullptr) list->head->prev = n;
-    else list->tail = n; // список был пуст
+    else list->tail = n;
     list->head = n;
 }
 
 void pushBack(DList* list, const string& value) {
     DNode* n = new DNode{value, list->tail, nullptr};
     if (list->tail != nullptr) list->tail->next = n;
-    else list->head = n; // список был пуст
+    else list->head = n;
     list->tail = n;
 }
 
-// Благодаря ссылке prev не нужно искать предыдущий узел: вставка после узла за O(1)
-// после того, как сам узел найден.
 bool pushAfter(DList* list, const string& target, const string& value) {
     DNode* p = findNode(list, target);
     if (p == nullptr) return false;
@@ -55,9 +50,6 @@ bool pushBefore(DList* list, const string& target, const string& value) {
     return true;
 }
 
-// ---------- Удаление ----------
-
-// Единая операция отключения узла от списка: не нужно отдельно обрабатывать голову и хвост.
 void unlink(DList* list, DNode* node) {
     if (node->prev != nullptr) node->prev->next = node->next;
     else list->head = node->next;
@@ -66,7 +58,6 @@ void unlink(DList* list, DNode* node) {
     delete node;
 }
 
-// В отличие от односвязного списка, хвост удаляется за O(1): есть ссылка на предыдущий узел.
 bool popFront(DList* list, string& result) {
     if (list->head == nullptr) return false;
     result = list->head->data;
@@ -97,15 +88,12 @@ bool removeBefore(DList* list, const string& target, string& result) {
     return true;
 }
 
-// Поиск узла и отключение: удаление по значению не требует отдельного обхода от головы.
 bool removeValue(DList* list, const string& value) {
     DNode* p = findNode(list, value);
     if (p == nullptr) return false;
     unlink(list, p);
     return true;
 }
-
-// ---------- Чтение ----------
 
 bool getAt(DList* list, int index, string& result) {
     if (index < 0) return false;
@@ -129,7 +117,6 @@ void print(DList* list) {
     cout << endl;
 }
 
-// Обход от хвоста — в двусвязном списке это просто переход по prev, без стека и рекурсии.
 void printReverse(DList* list) {
     DNode* cur = list->tail;
     if (cur == nullptr) { cout << "(empty)" << endl; return; }

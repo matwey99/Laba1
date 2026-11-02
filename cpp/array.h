@@ -1,20 +1,18 @@
 #pragma once
 #include <string>
 
-// ---------- Массив (префикс команд M) ----------
-
 struct Array {
-    std::string* data; // блок памяти, элементы лежат подряд
-    int size;          // число занятых элементов
-    int capacity;      // размер блока памяти
+    std::string* data;
+    int size;
+    int capacity;
 };
 
 Array* createArray();
-void pushBack(Array* arr, const std::string& value);                      // добавление в конец
-bool insertAt(Array* arr, int index, const std::string& value);          // добавление по индексу
-bool getAt(Array* arr, int index, std::string& result);                  // чтение по индексу
-bool setAt(Array* arr, int index, const std::string& value);              // замена по индексу
-bool removeAt(Array* arr, int index);                                     // удаление по индексу
-int length(Array* arr);                                                   // длина массива
+void pushBack(Array* arr, const std::string& value);
+bool insertAt(Array* arr, int index, const std::string& value);
+bool getAt(Array* arr, int index, std::string& result);
+bool setAt(Array* arr, int index, const std::string& value);
+bool removeAt(Array* arr, int index);
+int length(Array* arr);
 void print(Array* arr);
 void freeArray(Array* arr);

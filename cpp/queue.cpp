@@ -7,7 +7,6 @@ Queue* createQueue() {
     return new Queue{nullptr, nullptr};
 }
 
-// Добавление в конец очереди через указатель tail — O(1).
 void push(Queue* q, const string& value) {
     FNode* n = new FNode{value, nullptr};
     if (q->tail == nullptr) {
@@ -19,25 +18,22 @@ void push(Queue* q, const string& value) {
     }
 }
 
-// Извлечение из начала очереди — O(1).
 bool pop(Queue* q, string& result) {
     if (q->head == nullptr) return false;
     FNode* old = q->head;
     result = old->data;
     q->head = old->next;
-    if (q->head == nullptr) q->tail = nullptr; // очередь опустела
+    if (q->head == nullptr) q->tail = nullptr;
     delete old;
     return true;
 }
 
-// Чтение первого элемента без его извлечения.
 bool peek(Queue* q, string& result) {
     if (q->head == nullptr) return false;
     result = q->head->data;
     return true;
 }
 
-// Вывод от начала очереди к концу.
 void print(Queue* q) {
     FNode* cur = q->head;
     if (cur == nullptr) { cout << "(empty)" << endl; return; }

@@ -2,9 +2,6 @@ package main
 
 import "fmt"
 
-// ---------- Стек на основе односвязного списка (префикс команд S) ----------
-
-// Вершина стека - голова списка: push и pop работают с головой, O(1).
 type Stack struct {
 	head *FNode
 }
@@ -13,7 +10,6 @@ func NewStack() *Stack {
 	return &Stack{nil}
 }
 
-// Новый элемент вставляется в голову списка и становится вершиной стека.
 func (s *Stack) Push(value string) {
 	s.head = &FNode{value, s.head}
 }
@@ -27,7 +23,6 @@ func (s *Stack) Pop() (string, bool) {
 	return old.data, true
 }
 
-// Чтение вершины без её удаления.
 func (s *Stack) Peek() (string, bool) {
 	if s.head == nil {
 		return "", false
@@ -35,7 +30,6 @@ func (s *Stack) Peek() (string, bool) {
 	return s.head.data, true
 }
 
-// Вывод от вершины к дну.
 func (s *Stack) Print() {
 	if s.head == nil {
 		fmt.Println("(empty)")

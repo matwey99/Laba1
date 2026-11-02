@@ -7,13 +7,11 @@ Stack* createStack() {
     return new Stack{nullptr};
 }
 
-// Новый элемент вставляется в голову списка и становится вершиной стека, O(1).
 void push(Stack* s, const string& value) {
     FNode* n = new FNode{value, s->head};
     s->head = n;
 }
 
-// Извлечение вершины: удаляем голову списка, O(1).
 bool pop(Stack* s, string& result) {
     if (s->head == nullptr) return false;
     FNode* old = s->head;
@@ -23,14 +21,12 @@ bool pop(Stack* s, string& result) {
     return true;
 }
 
-// Чтение вершины без её удаления.
 bool peek(Stack* s, string& result) {
     if (s->head == nullptr) return false;
     result = s->head->data;
     return true;
 }
 
-// Вывод от вершины к дну.
 void print(Stack* s) {
     FNode* cur = s->head;
     if (cur == nullptr) { cout << "(empty)" << endl; return; }

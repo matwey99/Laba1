@@ -7,7 +7,6 @@ FList* createFList() {
     return new FList{nullptr, nullptr};
 }
 
-// Линейный поиск узла по значению: идём от головы, пока не найдём или не дойдём до конца, O(n).
 FNode* findNode(FList* list, const string& value) {
     FNode* cur = list->head;
     while (cur != nullptr) {
@@ -17,16 +16,12 @@ FNode* findNode(FList* list, const string& value) {
     return nullptr;
 }
 
-// ---------- Добавление ----------
-
-// Новый узел становится головой: переставляем всего один указатель, O(1).
 void pushFront(FList* list, const string& value) {
     FNode* n = new FNode{value, list->head};
     list->head = n;
-    if (list->tail == nullptr) list->tail = n; // список был пуст
+    if (list->tail == nullptr) list->tail = n;
 }
 
-// Добавление в конец через указатель tail — O(1), иначе пришлось бы идти до конца.
 void pushBack(FList* list, const string& value) {
     FNode* n = new FNode{value, nullptr};
     if (list->tail == nullptr) {
@@ -38,18 +33,15 @@ void pushBack(FList* list, const string& value) {
     }
 }
 
-// Вставка после заданного узла: нужный узел находим поиском, затем меняем две ссылки.
 bool pushAfter(FList* list, const string& target, const string& value) {
     FNode* p = findNode(list, target);
     if (p == nullptr) return false;
     FNode* n = new FNode{value, p->next};
     p->next = n;
-    if (p == list->tail) list->tail = n; // новый узел стал хвостом
+    if (p == list->tail) list->tail = n;
     return true;
 }
 
-// Вставка перед заданным узлом: если это голова, вставляем в начало.
-// Иначе ищем узел, стоящий перед ним.
 bool pushBefore(FList* list, const string& target, const string& value) {
     if (list->head == nullptr) return false;
     if (list->head->data == target) {
@@ -66,23 +58,19 @@ bool pushBefore(FList* list, const string& target, const string& value) {
     return true;
 }
 
-// ---------- Удаление ----------
-
 bool popFront(FList* list, string& result) {
     if (list->head == nullptr) return false;
     FNode* old = list->head;
     result = old->data;
     list->head = old->next;
-    if (list->head == nullptr) list->tail = nullptr; // список стал пустым
+    if (list->head == nullptr) list->tail = nullptr;
     delete old;
     return true;
 }
 
-// В односвязном списке удалить хвост за O(1) нельзя: у хвоста нет ссылки на предыдущий узел,
-// поэтому ищем предпоследний узел, O(n).
 bool popBack(FList* list, string& result) {
     if (list->head == nullptr) return false;
-    if (list->head == list->tail) { // единственный узел
+    if (list->head == list->tail) {
         result = list->head->data;
         delete list->head;
         list->head = nullptr;
@@ -102,7 +90,7 @@ bool popBack(FList* list, string& result) {
 
 bool removeAfter(FList* list, const string& target, string& result) {
     FNode* p = findNode(list, target);
-    if (p == nullptr || p->next == nullptr) return false; // нет следующего узла
+    if (p == nullptr || p->next == nullptr) return false;
     FNode* victim = p->next;
     result = victim->data;
     p->next = victim->next;
@@ -112,14 +100,14 @@ bool removeAfter(FList* list, const string& target, string& result) {
 }
 
 bool removeBefore(FList* list, const string& target, string& result) {
-    if (list->head == nullptr || list->head->data == target) return false; // перед головой ничего нет
-    if (list->head->next == nullptr) return false;                         // список из одного узла
+    if (list->head == nullptr || list->head->data == target) return false;
+    if (list->head->next == nullptr) return false;
     if (list->head->next->data == target) return popFront(list, result);
-    FNode* prev = list->head; // узел, стоящий перед удаляемым
+    FNode* prev = list->head;
     while (prev->next->next != nullptr && prev->next->next->data != target) {
         prev = prev->next;
     }
-    if (prev->next->next == nullptr) return false; // целевого узла нет
+    if (prev->next->next == nullptr) return false;
     FNode* victim = prev->next;
     result = victim->data;
     prev->next = victim->next;
@@ -127,7 +115,6 @@ bool removeBefore(FList* list, const string& target, string& result) {
     return true;
 }
 
-// Удаление по значению: поиск узла, затем перенаправление одной ссылки.
 bool removeValue(FList* list, const string& value) {
     if (list->head == nullptr) return false;
     if (list->head->data == value) {
@@ -146,9 +133,6 @@ bool removeValue(FList* list, const string& value) {
     return true;
 }
 
-// ---------- Чтение ----------
-
-// Доступ по индексу в односвязном списке: идём от головы index шагов, O(n).
 bool getAt(FList* list, int index, string& result) {
     if (index < 0) return false;
     FNode* cur = list->head;
@@ -171,7 +155,6 @@ void print(FList* list) {
     cout << endl;
 }
 
-// Рекурсивный обход от хвоста к голове.
 static void printReverseRec(FNode* node) {
     if (node == nullptr) return;
     printReverseRec(node->next);

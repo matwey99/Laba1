@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-// ---------- Двусвязный список (префикс команд L) ----------
-
 type DNode struct {
 	data string
 	prev *DNode
@@ -33,9 +31,6 @@ func (list *DList) FindNode(value string) *DNode {
 	return nil
 }
 
-// ---------- Добавление ----------
-
-// Меняем ссылки и у новой головы, и у прежней головы, O(1).
 func (list *DList) PushFront(value string) {
 	n := &DNode{value, nil, list.head}
 	if list.head != nil {
@@ -56,7 +51,6 @@ func (list *DList) PushBack(value string) {
 	list.tail = n
 }
 
-// Ссылка prev позволяет обойтись без поиска предыдущего узла.
 func (list *DList) PushAfter(target, value string) bool {
 	p := list.FindNode(target)
 	if p == nil {
@@ -87,10 +81,6 @@ func (list *DList) PushBefore(target, value string) bool {
 	return true
 }
 
-// ---------- Удаление ----------
-
-// unlink - общий помощник: отключает узел от соседей и освобождает память.
-// Память узла освобождает сборщик мусора, как только на него нет ссылок.
 func (list *DList) unlink(node *DNode) {
 	if node.prev != nil {
 		node.prev.next = node.next
@@ -104,7 +94,6 @@ func (list *DList) unlink(node *DNode) {
 	}
 }
 
-// В отличие от односвязного списка, хвост удаляется за O(1).
 func (list *DList) PopFront() (string, bool) {
 	if list.head == nil {
 		return "", false
@@ -152,8 +141,6 @@ func (list *DList) RemoveValue(value string) bool {
 	return true
 }
 
-// ---------- Чтение ----------
-
 func (list *DList) GetAt(index int) (string, bool) {
 	if index < 0 {
 		return "", false
@@ -186,7 +173,6 @@ func (list *DList) Print() {
 	fmt.Println(list.String())
 }
 
-// Обход от хвоста - просто переход по prev.
 func (list *DList) PrintReverse() {
 	if list.tail == nil {
 		fmt.Println("(empty)")
