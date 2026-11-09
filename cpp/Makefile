@@ -9,10 +9,7 @@ all: dbms
 dbms: $(SRC) $(HDR)
 	$(CXX) $(CXXFLAGS) $(SRC) -o dbms
 
-test: dbms
-	./test.sh
-
 clean:
 	rm -f dbms test.data
 
-.PHONY: all test clean
+.PHONY: all clean
